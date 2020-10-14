@@ -2,11 +2,11 @@
 
 /* Recommended max cache and object sizes */
 #define HOSTNAME_MAX_LEN 63
-#define PORT_MAX_LEN 16
+#define PORT_MAX_LEN 10
 #define HEADER_NAME_MAX_LEN 32
 #define HEADER_VALUE_MAX_LEN 64
-#define MAX_CACHE_SIZE 1049000
-#define MAX_OBJECT_SIZE 102400
+#define MAX_CACHE_SIZE (1 << 20)
+#define MAX_OBJECT_SIZE ((1 << 10) * 100)
 
 /*
 static const char *user_agent_hdr =
