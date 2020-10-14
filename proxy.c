@@ -2,11 +2,11 @@
 
 /* Recommended max cache and object sizes */
 #define HOSTNAME_MAX_LEN 63
-#define PORT_MAX_LEN 10
+#define PORT_MAX_LEN 16 
 #define HEADER_NAME_MAX_LEN 32
 #define HEADER_VALUE_MAX_LEN 64
-#define MAX_CACHE_SIZE (1 << 20)
-#define MAX_OBJECT_SIZE ((1 << 10) * 100)
+#define MAX_CACHE_SIZE 1049000 
+#define MAX_OBJECT_SIZE 102400 
 
 /*
 static const char *user_agent_hdr =
@@ -138,7 +138,7 @@ void parse_request(int fd, RequestLine *request_line, RequestHeader *headers,
 void parse_uri(char *uri, RequestLine *request_line) {
   if (strstr(uri, "http://") != uri) {
     fprintf(stderr, "Error: invalid uri!\n");
-    exit(0);
+    exit(1);
   }
   uri += strlen("http://");
   char *c = strstr(uri, ":");
@@ -157,7 +157,7 @@ RequestHeader parse_header(char *line) {
   char *c = strstr(line, ":");
   if (c == NULL) {
     fprintf(stderr, "Error: invalid header: %s\n", line);
-    exit(0);
+    exit(1);
   }
   *c = '\0';
   strcpy(header.name, line);
