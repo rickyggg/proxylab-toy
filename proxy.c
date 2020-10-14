@@ -2,11 +2,11 @@
 
 /* Recommended max cache and object sizes */
 #define HOSTNAME_MAX_LEN 63
-#define PORT_MAX_LEN 16 
+#define PORT_MAX_LEN 16
 #define HEADER_NAME_MAX_LEN 32
 #define HEADER_VALUE_MAX_LEN 64
-#define MAX_CACHE_SIZE 1049000 
-#define MAX_OBJECT_SIZE 102400 
+#define MAX_CACHE_SIZE 1049000
+#define MAX_OBJECT_SIZE 102400
 
 /*
 static const char *user_agent_hdr =
@@ -198,11 +198,12 @@ void init_cache() {
 int reader(int fd, char *uri) {
   int in_cache = 0;
   P(&mutex);
+  // Critical Section Begin (for readcnt)
   ++readcnt;
   if (readcnt == 1)
-    P(&w);
+    P(&w); // Critical Section Begin (for reading)
+  // Critical Section End (for readcnt)
   V(&mutex);
-  // Critical Section Begin
   for (int i = 0; i < 10; ++i) {
     if (!strcmp(cache.objects[i].name, uri)) {
       Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
@@ -210,11 +211,11 @@ int reader(int fd, char *uri) {
       break;
     }
   }
-  // Critical Section End
   P(&mutex);
+  // Critical Section Begin (for readcnt)
   --readcnt;
   if (readcnt == 0)
-    V(&w);
+    V(&w); // Critical Section End (for readcnt)
   V(&mutex);
   return in_cache;
 }
