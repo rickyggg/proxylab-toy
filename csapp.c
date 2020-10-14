@@ -1,9 +1,6 @@
 /* 
  * csapp.c - Functions for the CS:APP3e book
  *
- * Updated 10/2016 reb:
- *   - Fixed bug in sio_ltoa that didn't cover negative numbers
- *
  * Updated 2/2016 droh:
  *   - Updated open_clientfd and open_listenfd to fail more gracefully
  *
@@ -238,18 +235,10 @@ static void sio_reverse(char s[])
 static void sio_ltoa(long v, char s[], int b) 
 {
     int c, i = 0;
-    int neg = v < 0;
-
-    if (neg)
-	v = -v;
-
+    
     do {  
         s[i++] = ((c = (v % b)) < 10)  ?  c + '0' : c - 10 + 'a';
     } while ((v /= b) > 0);
-
-    if (neg)
-	s[i++] = '-';
-
     s[i] = '\0';
     sio_reverse(s);
 }
@@ -583,7 +572,7 @@ int Accept(int s, struct sockaddr *addr, socklen_t *addrlen)
     int rc;
 
     if ((rc = accept(s, addr, addrlen)) < 0)
-	unix_error("Accept error");
+	    unix_error("Accept error");
     return rc;
 }
 
