@@ -154,7 +154,7 @@ int send_to_server(RequestLine *line, RequestHeader *header, int num_hds) {
 
   clientfd = Open_clientfd(line->host, line->port);
   Rio_readinitb(&rio, clientfd);
-  sprintf(buf_head,"GET %s HTTP/1.0\r\n", line->path);
+  sprintf(buf_head, "GET %s HTTP/1.0\r\n", line->path);
   buf_head = buf + strlen(buf);
   for (int i = 0; i < num_hds; ++i) {
     sprintf(buf_head, "%s : %s", header[i].name, header[i].value);
