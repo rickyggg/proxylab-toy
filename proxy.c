@@ -8,9 +8,11 @@
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 
+/*
 static const char *user_agent_hdr =
     "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120305 "
     "Firefox/10.0.3\r\n";
+*/
 
 typedef struct {
   char host[HOSTNAME_MAX_LEN];
@@ -136,7 +138,7 @@ void parse_request(int fd, RequestLine *request_line, RequestHeader *headers,
 void parse_uri(char *uri, RequestLine *request_line) {
   if (strstr(uri, "http://") != uri) {
     fprintf(stderr, "Error: invalid uri!\n");
-    exit(1);
+    exit(0);
   }
   uri += strlen("http://");
   char *c = strstr(uri, ":");
@@ -155,7 +157,7 @@ RequestHeader parse_header(char *line) {
   char *c = strstr(line, ":");
   if (c == NULL) {
     fprintf(stderr, "Error: invalid header: %s\n", line);
-    exit(1);
+    exit(0);
   }
   *c = '\0';
   strcpy(header.name, line);
@@ -185,9 +187,9 @@ void init_cache() {
   Sem_init(&mutex, 0, 1);
   Sem_init(&w, 0, 1);
   readcnt = 0;
-  cache.objects = (CacheLine*) Malloc(sizeof(CacheLine)* 10);
+  cache.objects = (CacheLine *)Malloc(sizeof(CacheLine) * 10);
   cache.used_cnt = 0;
-  for (int i = 0; i< 10; ++i) {
+  for (int i = 0; i < 10; ++i) {
     cache.objects[i].name = Malloc(sizeof(char) * MAXLINE);
     cache.objects[i].object = Malloc(sizeof(char) * MAX_OBJECT_SIZE);
   }
@@ -201,7 +203,7 @@ int reader(int fd, char *uri) {
     P(&w);
   V(&mutex);
   // Critical Section Begin
-  for (int i = 0;i < 10; ++i) {
+  for (int i = 0; i < 10; ++i) {
     if (!strcmp(cache.objects[i].name, uri)) {
       Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
       in_cache = 1;
@@ -221,7 +223,7 @@ void writer(char *uri, char *buf) {
   P(&w);
   // Critical Section Begin
   strcpy(cache.objects[cache.used_cnt].name, uri);
-  strcpy(cache.objects[cache.used_cnt].object,buf);
+  strcpy(cache.objects[cache.used_cnt].object, buf);
   ++cache.used_cnt;
   V(&w);
 }
