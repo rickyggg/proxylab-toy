@@ -23,6 +23,16 @@ typedef struct {
   char value[HEADER_VALUE_MAX_LEN];
 } RequestHeader;
 
+typedef struct {
+  char *name;
+  char *object;
+} CacheLine;
+
+typedef struct {
+  int used_cnt;
+  CacheLine *objects;
+} Cache;
+
 void doit(int fd);
 void parse_request(int fd, RequestLine *request_line, RequestHeader *headers,
                    int *num_hds);
@@ -31,8 +41,13 @@ RequestHeader parse_header(char *line);
 int send_to_server(RequestLine *request_line, RequestHeader *headers,
                    int num_hds);
 void *thread(void *vargp);
+void init_cache();
 int reader(int fd, char *uri);
 void writer(char *uri, char *buf);
+
+Cache cache;
+int readcnt;
+sem_t mutex, w;
 
 int main(int argc, char **argv) {
   int listenfd, *connfd;
@@ -46,6 +61,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  init_cache();
   listenfd = Open_listenfd(argv[1]);
   while (1) {
     clientlen = sizeof(clientaddr);
@@ -163,4 +179,49 @@ int send_to_server(RequestLine *line, RequestHeader *header, int num_hds) {
   sprintf(buf_head, "\r\n");
   Rio_writen(clientfd, buf, MAXLINE);
   return clientfd;
+}
+
+void init_cache() {
+  Sem_init(&mutex, 0, 1);
+  Sem_init(&w, 0, 1);
+  readcnt = 0;
+  cache.objects = (CacheLine*) Malloc(sizeof(CacheLine)* 10);
+  cache.used_cnt = 0;
+  for (int i = 0; i< 10; ++i) {
+    cache.objects[i].name = Malloc(sizeof(char) * MAXLINE);
+    cache.objects[i].object = Malloc(sizeof(char) * MAX_OBJECT_SIZE);
+  }
+}
+
+int reader(int fd, char *uri) {
+  int in_cache = 0;
+  P(&mutex);
+  ++readcnt;
+  if (readcnt == 1)
+    P(&w);
+  V(&mutex);
+  // Critical Section Begin
+  for (int i = 0;i < 10; ++i) {
+    if (!strcmp(cache.objects[i].name, uri)) {
+      Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
+      in_cache = 1;
+      break;
+    }
+  }
+  // Critical Section End
+  P(&mutex);
+  --readcnt;
+  if (readcnt == 0)
+    V(&w);
+  V(&mutex);
+  return in_cache;
+}
+
+void writer(char *uri, char *buf) {
+  P(&w);
+  // Critical Section Begin
+  strcpy(cache.objects[cache.used_cnt].name, uri);
+  strcpy(cache.objects[cache.used_cnt].object,buf);
+  ++cache.used_cnt;
+  V(&w);
 }
