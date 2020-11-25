@@ -49,7 +49,7 @@ void writer(char *uri, char *buf);
 
 Cache cache;
 int readcnt;
-sem_t mutex, w;
+sem_t w;
 
 int main(int argc, char **argv) {
   int listenfd, *connfd;
@@ -184,7 +184,6 @@ int send_to_server(RequestLine *line, RequestHeader *header, int num_hds) {
 }
 
 void init_cache() {
-  Sem_init(&mutex, 0, 1);
   Sem_init(&w, 0, 1);
   readcnt = 0;
   cache.objects = (CacheLine *)Malloc(sizeof(CacheLine) * 10);
@@ -197,13 +196,11 @@ void init_cache() {
 
 int reader(int fd, char *uri) {
   int in_cache = 0;
-  P(&mutex);
   // Critical Section Begin (for readcnt)
   ++readcnt;
   if (readcnt == 1)
     P(&w); // Critical Section Begin (for reading)
   // Critical Section End (for readcnt)
-  V(&mutex);
   for (int i = 0; i < 10; ++i) {
     if (!strcmp(cache.objects[i].name, uri)) {
       Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
@@ -211,12 +208,10 @@ int reader(int fd, char *uri) {
       break;
     }
   }
-  P(&mutex);
   // Critical Section Begin (for readcnt)
   --readcnt;
   if (readcnt == 0)
     V(&w); // Critical Section End (for readcnt)
-  V(&mutex);
   return in_cache;
 }
 
