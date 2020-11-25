@@ -196,39 +196,35 @@ void init_cache() {
 }
 
 int reader(int fd, char *uri) {
-  while (1) {
-    int in_cache = 0;
-    P(&mutex);
-    // Critical Section Begin (for readcnt)
-    ++readcnt;
-    if (readcnt == 1)
-      P(&w); // Critical Section Begin (for reading)
-    // Critical Section End (for readcnt)
-    V(&mutex);
-    for (int i = 0; i < 10; ++i) {
-      if (!strcmp(cache.objects[i].name, uri)) {
-        Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
-        in_cache = 1;
-        break;
-      }
+  int in_cache = 0;
+  P(&mutex);
+  // Critical Section Begin (for readcnt)
+  ++readcnt;
+  if (readcnt == 1)
+    P(&w); // Critical Section Begin (for reading)
+  // Critical Section End (for readcnt)
+  V(&mutex);
+  for (int i = 0; i < 10; ++i) {
+    if (!strcmp(cache.objects[i].name, uri)) {
+      Rio_writen(fd, cache.objects[i].object, MAX_OBJECT_SIZE);
+      in_cache = 1;
+      break;
     }
-    P(&mutex);
-    // Critical Section Begin (for readcnt)
-    --readcnt;
-    if (readcnt == 0)
-      V(&w); // Critical Section End (for readcnt)
-    V(&mutex);
-    return in_cache;
   }
+  P(&mutex);
+  // Critical Section Begin (for readcnt)
+  --readcnt;
+  if (readcnt == 0)
+    V(&w); // Critical Section End (for readcnt)
+  V(&mutex);
+  return in_cache;
 }
 
 void writer(char *uri, char *buf) {
-  while (1) {
-    P(&w);
-    // Critical Section Begin
-    strcpy(cache.objects[cache.used_cnt].name, uri);
-    strcpy(cache.objects[cache.used_cnt].object, buf);
-    ++cache.used_cnt;
-    V(&w);
-  }
+  P(&w);
+  // Critical Section Begin
+  strcpy(cache.objects[cache.used_cnt].name, uri);
+  strcpy(cache.objects[cache.used_cnt].object, buf);
+  ++cache.used_cnt;
+  V(&w);
 }
