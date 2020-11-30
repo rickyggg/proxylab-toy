@@ -48,7 +48,7 @@ int reader(int fd, char *uri);
 void writer(char *uri, char *buf);
 
 Cache cache;
-int readcnt;
+sig_atomic_t readcnt;
 sem_t w;
 
 int main(int argc, char **argv) {
